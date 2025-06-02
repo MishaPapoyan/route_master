@@ -1,0 +1,20 @@
+import express from 'express';
+import {
+    getAllLoads,
+    createLoad,
+    updateLoad,
+    deleteLoad,
+    markLoadContacted,
+    updateLoadStatus,
+} from '../controllers/load.controller.js';
+
+const router = express.Router();
+
+router.get('/', getAllLoads);
+router.post('/', createLoad);
+router.put('/:id', updateLoad);
+router.delete('/:id', deleteLoad);
+router.put('/:id/contact', markLoadContacted);
+router.put('/:id/status', updateLoadStatus);
+
+export default router;

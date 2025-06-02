@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RouteMaster API Routes (Sorted)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; }
+        h1 { color: #333; }
+        .route {
+            background: #fff;
+            padding: 15px;
+            border-left: 4px solid #007bff;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .label { font-weight: bold; margin-bottom: 5px; color: #555; }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            font-family: monospace;
+            background: #f4f4f4;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+        }
+        textarea { height: 90px; }
+    </style>
+</head>
+<body>
+
+<h1>📚 RouteMaster API (Sorted by URL)</h1>
+
+<!-- Export routes -->
+<div class="route">
+    <div class="label">GET /api/export/drivers</div>
+    <input type="text" readonly value="/api/export/drivers">
+</div>
+
+<div class="route">
+    <div class="label">GET /api/export/loads</div>
+    <input type="text" readonly value="/api/export/loads">
+</div>
+
+<!-- Driver routes -->
+<div class="route">
+    <div class="label">GET /api/drivers</div>
+    <input type="text" readonly value="/api/drivers">
+</div>
+
+<div class="route">
+    <div class="label">POST /api/drivers</div>
+    <input type="text" readonly value="/api/drivers">
+    <textarea readonly>{
+  "name": "Mike Jones",
+  "phone_number": "+1 123 456 7890",
+  "current_location": "TX",
+  "next_location": "CA"
+}</textarea>
+</div>
+
+<!-- Load routes -->
+<div class="route">
+    <div class="label">GET /api/loads</div>
+    <input type="text" readonly value="/api/loads">
+</div>
+
+<div class="route">
+    <div class="label">POST /api/loads</div>
+    <input type="text" readonly value="/api/loads">
+    <textarea readonly>{
+  "reference_id": "DAT-1234567",
+  "company": "FedEx",
+  "broker_name": "John Smith",
+  "from_location": "Dallas, TX",
+  "to_location": "Los Angeles, CA",
+  "rate": 3500
+}</textarea>
+</div>
+
+<!-- Match routes -->
+<div class="route">
+    <div class="label">GET /api/match/drivers-for-load/:loadId</div>
+    <input type="text" readonly value="/api/match/drivers-for-load/1">
+</div>
+
+<div class="route">
+    <div class="label">GET /api/match/loads-for-driver/:driverId</div>
+    <input type="text" readonly value="/api/match/loads-for-driver/1">
+</div>
+
+<!-- Stats routes -->
+<div class="route">
+    <div class="label">GET /api/stats/avg-rate</div>
+    <input type="text" readonly value="/api/stats/avg-rate?from=TX&to=CA">
+</div>
+
+<div class="route">
+    <div class="label">GET /api/stats/top-brokers</div>
+    <input type="text" readonly value="/api/stats/top-brokers">
+</div>
+
+<div class="route">
+    <div class="label">GET /api/stats/weekly-summary</div>
+    <input type="text" readonly value="/api/stats/weekly-summary">
+</div>
+
+</body>
+</html>
