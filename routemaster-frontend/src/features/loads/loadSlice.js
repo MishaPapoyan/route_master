@@ -5,7 +5,7 @@ const API_BASE = 'http://localhost:5000/api';
 
 export const fetchLoads = createAsyncThunk('loads/fetchLoads', async () => {
     const response = await axios.get(`${API_BASE}/loads`);
-    return response.data;
+    return response.data.filter(load => !load.contacted);
 });
 
 export const createLoad = createAsyncThunk('loads/createLoad', async (loadData) => {

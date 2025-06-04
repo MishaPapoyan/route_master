@@ -6,6 +6,7 @@ import {
     deleteLoad,
     markLoadContacted,
     updateLoadStatus,
+    updateLoadClick, // ✅ NEW
 } from '../controllers/load.controller.js';
 
 const router = express.Router();
@@ -16,5 +17,6 @@ router.put('/:id', updateLoad);
 router.delete('/:id', deleteLoad);
 router.put('/:id/contact', markLoadContacted);
 router.put('/:id/status', updateLoadStatus);
+router.put('/:id/click', updateLoadClick); // ✅ NEW
 
 export default router;

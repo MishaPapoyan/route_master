@@ -1,52 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
-    fetchLoads,
-    createLoad,
-    updateLoad,
-    deleteLoad,
-} from '../../features/loads/loadSlice';
-// import { addDoNotCall } from '../../features/doNotCall/doNotCallSlice';
-import { FiSearch, FiRefreshCw, FiPlus, FiEdit2, FiTrash } from 'react-icons/fi';
+    fetchContactedLoads,
+    createContactedLoad,
+    updateContactedLoad,
+    deleteContactedLoad,
+    updateContactedLoadClick
+} from '../../features/loads/contactedLoadsSlice';
+import { FiSearch, FiRefreshCw, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Header from '../HomePage/Header';
 import { Formik, Form, Field } from 'formik';
-import DoNotCallList from "./doNotCallList.jsx";
-import {addDoNotCall} from "../../features/loads/doNotCallListSlice.js";
+import DoNotCallList from './doNotCallList.jsx';
+import { addDoNotCall } from '../../features/loads/doNotCallListSlice';
 
 export default function ContactedLoadsTable() {
     const dispatch = useDispatch();
     const { list: loads = [], loading, error } = useSelector(
-        (state) => state.loads || {}
+        (state) => state.contactedLoads || {}
     );
+
     const [searchQuery, setSearchQuery] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [daysAgo, setDaysAgo] = useState(0);
     const [editingLoad, setEditingLoad] = useState(null);
 
     useEffect(() => {
         const load = async () => {
             setIsRefreshing(true);
-            await dispatch(fetchLoads());
+            await dispatch(fetchContactedLoads());
             setIsRefreshing(false);
         };
         load();
     }, [dispatch]);
 
-    const filteredByDate =
-        daysAgo === 5
-            ? loads
-            : loads.filter((load) => {
-                if (!load.contactedAt) return false;
-                const loadDate = new Date(load.contactedAt).toDateString();
-                const targetDate = new Date();
-                targetDate.setDate(targetDate.getDate() - daysAgo);
-                return loadDate === targetDate.toDateString();
-            });
-
-    const contactedLoads = filteredByDate.filter((load) => load.contacted);
-
-    const filtered = contactedLoads.filter((load) =>
+    const filtered = loads.filter((load) =>
         [
             'from_location',
             'to_location',
@@ -66,27 +53,30 @@ export default function ContactedLoadsTable() {
         const payload = {
             ...values,
             contacted: true,
-            contactedAt: new Date(),
+            contactedAt: new Date()
         };
 
         try {
             if (editingLoad) {
-                await dispatch(updateLoad({ id: editingLoad.id, loadData: payload })).unwrap();
+                await dispatch(updateContactedLoad({ id: editingLoad.id, loadData: payload })).unwrap();
             } else {
-                await dispatch(createLoad(payload)).unwrap();
+                await dispatch(createContactedLoad(payload)).unwrap();
             }
 
             if (payload.worked_with_us_before === 'no') {
                 dispatch(addDoNotCall({ company: payload.company }));
             }
 
-            await dispatch(fetchLoads());
+            await dispatch(fetchContactedLoads());
             setIsFormOpen(false);
             setEditingLoad(null);
         } catch (err) {
-            console.error('❌ Failed to submit load:', err);
+            console.error('❌ Failed to submit contacted load:', err);
         }
     };
+
+    const totalCalls = loads.filter(l => l.contact_method === 'call').length;
+    const totalEmails = loads.filter(l => l.contact_method === 'email').length;
 
     return (
         <div className="p-4 md:p-6">
@@ -124,23 +114,10 @@ export default function ContactedLoadsTable() {
                             />
                         </div>
 
-                        <select
-                            value={daysAgo}
-                            onChange={(e) => setDaysAgo(Number(e.target.value))}
-                            className="px-4 py-2 border border-gray-200 rounded-lg"
-                        >
-                            <option value={0}>Today</option>
-                            <option value={1}>Yesterday</option>
-                            <option value={2}>2 Days Ago</option>
-                            <option value={3}>3 Days Ago</option>
-                            <option value={4}>4 Days Ago</option>
-                            <option value={5}>All Time</option>
-                        </select>
-
                         <button
                             onClick={() => {
-                                setEditingLoad(null);
                                 setIsFormOpen(true);
+                                setEditingLoad(null);
                             }}
                             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg shadow"
                         >
@@ -152,19 +129,17 @@ export default function ContactedLoadsTable() {
                 {isFormOpen && (
                     <div className="px-6 py-4">
                         <Formik
-                            initialValues={
-                                editingLoad || {
-                                    from_location: '',
-                                    to_location: '',
-                                    weight: '',
-                                    rate: '',
-                                    contact_method: 'call',
-                                    notes: '',
-                                    company: 'N/A',
-                                    reference_id: '',
-                                    worked_with_us_before: 'no',
-                                }
-                            }
+                            initialValues={{
+                                from_location: editingLoad?.from_location || '',
+                                to_location: editingLoad?.to_location || '',
+                                weight: editingLoad?.weight || '',
+                                rate: editingLoad?.rate || '',
+                                contact_method: editingLoad?.contact_method || 'call',
+                                notes: editingLoad?.notes || '',
+                                company: editingLoad?.company || 'N/A',
+                                reference_id: editingLoad?.reference_id || '',
+                                worked_with_us_before: editingLoad?.worked_with_us_before || 'no',
+                            }}
                             enableReinitialize
                             onSubmit={handleSubmit}
                         >
@@ -212,6 +187,13 @@ export default function ContactedLoadsTable() {
                     <DoNotCallList />
                 </div>
 
+                {/* 📊 Contact Method Totals */}
+                <div className="px-6 pt-2 pb-4 text-sm text-gray-700 flex gap-6">
+                    <span>📦 Total Contacted: <strong>{loads.length}</strong></span>
+                    <span>📞 Calls: <strong>{totalCalls}</strong></span>
+                    <span>📧 Emails: <strong>{totalEmails}</strong></span>
+                </div>
+
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm text-left">
                         <thead className="bg-gray-50">
@@ -240,7 +222,7 @@ export default function ContactedLoadsTable() {
                                 <td className="px-4 py-2 capitalize">{load.contact_method}</td>
                                 <td className="px-4 py-2">{load.notes}</td>
                                 <td className="px-4 py-2">{load.worked_with_us_before === 'yes' ? 'Yes' : 'No'}</td>
-                                <td className="px-4 py-2 flex gap-2">
+                                <td className="px-4 py-2 flex gap-2 flex-wrap">
                                     <button
                                         onClick={() => {
                                             setEditingLoad(load);
@@ -251,15 +233,21 @@ export default function ContactedLoadsTable() {
                                         <FiEdit2 /> Edit
                                     </button>
                                     <button
-                                        onClick={() => dispatch(deleteLoad(load.id))}
+                                        onClick={() => dispatch(deleteContactedLoad(load.id))}
                                         className="text-red-600 hover:underline flex items-center gap-1"
                                     >
-                                        <FiTrash /> Delete
+                                        <FiTrash2 /> Delete
+                                    </button>
+                                    <button
+                                        onClick={() => dispatch(updateContactedLoadClick({ id: load.id, type: 'didnt_connect', change: 1 }))}
+                                        onDoubleClick={() => dispatch(updateContactedLoadClick({ id: load.id, type: 'didnt_connect', change: -1 }))}
+                                        className="bg-red-500 text-white px-2 py-1 rounded"
+                                    >
+                                        DC ({load.didnt_connect_count || 0})
                                     </button>
                                 </td>
                             </tr>
                         ))}
-
                         {!isRefreshing && filtered.length === 0 && (
                             <tr>
                                 <td colSpan="10" className="text-center py-6 text-gray-400">

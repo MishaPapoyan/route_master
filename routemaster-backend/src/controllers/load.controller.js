@@ -110,3 +110,25 @@ export const markLoadContacted = async (req, res) => {
 };
 
 
+
+export const updateLoadClick = async (req, res) => {
+    const { id } = req.params;
+    const { type, change = 1 } = req.body;
+
+    try {
+        const load = await db.Load.findByPk(id);
+        if (!load) return res.status(404).json({ message: 'Load not found' });
+
+        if (type === 'didnt_connect') {
+            load.didnt_connect_count = Math.max(0, (load.didnt_connect_count || 0) + change);
+        } else {
+            return res.status(400).json({ message: 'Invalid update type' });
+        }
+
+        await load.save();
+        res.status(200).json(load);
+    } catch (err) {
+        console.error('❌ Error updating load click:', err);
+        res.status(500).json({ message: 'Server error while updating load click' });
+    }
+};
