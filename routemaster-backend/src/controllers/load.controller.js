@@ -11,24 +11,44 @@ export const getAllLoads = async (req, res) => {
     }
 };
 
+// controllers/load.controller.js
+
 export const createLoad = async (req, res) => {
     try {
-        const { rigz_id } = req.body;
+        const { rigz_id, worked_with_us_before, company, broker, ...loadData } = req.body;
 
+        // ✅ Validate rigz_id if present
         if (rigz_id) {
             const driver = await db.Driver.findOne({ where: { rigz_id: String(rigz_id) } });
             if (!driver) {
-                return res.status(404).json({ message: 'Driver with given rigz_id not found' });
+                return res.status(404).json({ message: '❌ Driver with this rigz_id not found' });
+            }
+            loadData.driverId = driver.id;
+        }
+
+        // ✅ Create the Load
+        const newLoad = await db.Load.create({ ...loadData, rigz_id, worked_with_us_before, company, broker });
+
+        // ✅ DNC check & insert
+        if (worked_with_us_before === 'no' && company && broker) {
+            const exists = await db.DoNotCallList.findOne({ where: { company_name: company, broker_name: broker } });
+            if (!exists) {
+                await db.DoNotCallList.create({
+                    company_name: company,
+                    broker_name: broker,
+                    added_from: 'auto',
+                });
+                console.log(`🛑 DNC: ${company} (${broker}) added`);
             }
         }
 
-        const newLoad = await db.Load.create(req.body);
-        res.status(201).json(newLoad);
+        return res.status(201).json(newLoad);
     } catch (err) {
         console.error('❌ Error creating load:', err);
-        res.status(500).json({ message: 'Server error while creating load' });
+        return res.status(500).json({ message: 'Server error while creating load' });
     }
 };
+
 
 
 export const updateLoad = async (req, res) => {
@@ -130,5 +150,21 @@ export const updateLoadClick = async (req, res) => {
     } catch (err) {
         console.error('❌ Error updating load click:', err);
         res.status(500).json({ message: 'Server error while updating load click' });
+    }
+};
+export const updateCoveredStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { covered } = req.body;
+        const load = await db.Load.findByPk(id);
+        if (!load) return res.status(404).json({ message: 'Load not found' });
+
+        load.covered = covered;
+        await load.save();
+
+        res.status(200).json(load);
+    } catch (err) {
+        console.error('❌ Error updating covered status:', err);
+        res.status(500).json({ message: 'Failed to update covered status' });
     }
 };

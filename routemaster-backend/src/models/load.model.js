@@ -7,7 +7,14 @@ export default (sequelize) => {
             primaryKey: true,
             autoIncrement: true,
         },
-
+        covered: {
+            type: DataTypes.BOOLEAN,
+            defaultValue: false
+        },
+        didnt_connect_count: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        },
         status: {
             type: DataTypes.ENUM('open', 'assigned', 'booked', 'cancelled'),
             allowNull: false,

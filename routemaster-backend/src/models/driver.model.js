@@ -14,7 +14,7 @@ export default (sequelize) => {
         phone_number: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true, // Ensure no duplicate phone numbers
+            unique: true,
         },
         call_count: {
             type: DataTypes.INTEGER,
@@ -24,7 +24,7 @@ export default (sequelize) => {
         status: {
             type: DataTypes.ENUM('connect', "didn't connect", 'pending'),
             allowNull: true,
-            defaultValue: 'pending', // Add a default status
+            defaultValue: 'pending',
         },
         covered: {
             type: DataTypes.BOOLEAN,
@@ -61,7 +61,7 @@ export default (sequelize) => {
             allowNull: true,
         },
         notes: {
-            type: DataTypes.TEXT, // Changed from STRING to TEXT for multiline notes
+            type: DataTypes.TEXT,
             allowNull: true,
         },
         max_weight_capacity: {
@@ -69,13 +69,13 @@ export default (sequelize) => {
             allowNull: false,
         },
         average_rate: {
-            type: DataTypes.DECIMAL(10, 2), // Specify precision and scale
+            type: DataTypes.DECIMAL(10, 2),
             allowNull: true,
         },
         preferred_routes: {
             type: DataTypes.ARRAY(DataTypes.STRING),
             allowNull: false,
-            defaultValue: [], // Ensure an empty array by default
+            defaultValue: [],
             get() {
                 const value = this.getDataValue('preferred_routes');
                 return Array.isArray(value) ? value : [];
@@ -85,8 +85,8 @@ export default (sequelize) => {
             },
         },
     }, {
-        tableName: 'drivers',
-        timestamps: true,
+        tableName: 'drivers',   // ✅ force lowercase table
+        timestamps: true        // ✅ enable createdAt/updatedAt
     });
 
     Driver.associate = (models) => {

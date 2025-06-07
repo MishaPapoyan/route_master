@@ -1,17 +1,21 @@
 import db from '../models/index.js';
-
 const Driver = db.Driver;
 
+// ✅ GET all drivers (no associations, safe fetch)
 export const getAllDrivers = async (req, res) => {
     try {
-        const drivers = await Driver.findAll();
+        const drivers = await Driver.findAll({ raw: true }); // prevent Sequelize association failures
         res.status(200).json(drivers);
     } catch (err) {
         console.error('❌ Error fetching Drivers:', err);
-        res.status(500).json({ message: 'Server error while fetching Drivers' });
+        res.status(500).json({
+            message: 'Server error while fetching Drivers',
+            error: err.message,
+        });
     }
 };
 
+// ✅ CREATE driver
 export const createDriver = async (req, res) => {
     try {
         const {
@@ -29,7 +33,7 @@ export const createDriver = async (req, res) => {
             preferred_routes,
             status,
             connect_count,
-            didnt_connect_count
+            didnt_connect_count,
         } = req.body;
 
         const newDriver = await Driver.create({
@@ -47,7 +51,7 @@ export const createDriver = async (req, res) => {
             preferred_routes,
             status,
             connect_count,
-            didnt_connect_count
+            didnt_connect_count,
         });
 
         console.log('✅ Driver created:', newDriver);
@@ -58,7 +62,7 @@ export const createDriver = async (req, res) => {
     }
 };
 
-
+// ✅ UPDATE driver
 export const updateDriver = async (req, res) => {
     const { id } = req.params;
     let updates = req.body;
@@ -68,10 +72,12 @@ export const updateDriver = async (req, res) => {
         return res.status(400).json({ message: 'No update data provided' });
     }
 
-    // Normalize preferred_routes to an array
     if (updates.preferred_routes !== undefined) {
         if (typeof updates.preferred_routes === 'string') {
-            updates.preferred_routes = updates.preferred_routes.split(',').map(route => route.trim()).filter(route => route.length > 0);
+            updates.preferred_routes = updates.preferred_routes
+                .split(',')
+                .map(route => route.trim())
+                .filter(route => route.length > 0);
         } else if (!Array.isArray(updates.preferred_routes)) {
             updates.preferred_routes = [];
         }
@@ -82,13 +88,16 @@ export const updateDriver = async (req, res) => {
         if (!driver) return res.status(404).json({ message: 'Driver not found' });
 
         await driver.update(updates);
-        const updatedDriver = await Driver.findByPk(id); // Fetch the full driver
+        const updatedDriver = await Driver.findByPk(id);
         res.status(200).json(updatedDriver);
     } catch (err) {
         console.error('❌ Error updating driver:', err);
         res.status(500).json({ message: 'Error updating driver', error: err.message });
     }
-};export const deleteDriver = async (req, res) => {
+};
+
+// ✅ DELETE driver
+export const deleteDriver = async (req, res) => {
     const driverId = req.params.id;
     try {
         const driver = await Driver.findByPk(driverId);
@@ -103,6 +112,7 @@ export const updateDriver = async (req, res) => {
     }
 };
 
+// ✅ CALL STATUS
 export const updateCallStatus = async (req, res) => {
     try {
         const { id } = req.params;
@@ -130,7 +140,7 @@ export const updateCallStatus = async (req, res) => {
         }
 
         await driver.save();
-        const updatedDriver = await Driver.findByPk(id); // Fetch the full driver
+        const updatedDriver = await Driver.findByPk(id);
         res.status(200).json(updatedDriver);
     } catch (err) {
         console.error('❌ Error updating driver interaction:', err);

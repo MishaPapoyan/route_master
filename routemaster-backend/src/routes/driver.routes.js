@@ -9,10 +9,19 @@ import {
 
 const router = express.Router();
 
+// GET all drivers
 router.get('/', getAllDrivers);
+
+// POST new driver
 router.post('/', createDriver);
-router.put('/:id', updateDriver); // ✅ handles "covered" updates
-router.delete('/:id', deleteDriver);
+
+// PUT update driver
+router.put('/:id', updateDriver);
+
+// PUT call status update
 router.put('/:id/click', updateCallStatus);
+
+// DELETE driver
+router.delete('/:id', deleteDriver);
 
 export default router;
