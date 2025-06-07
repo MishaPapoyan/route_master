@@ -5,19 +5,18 @@ import {
     createContactedLoad,
     updateContactedLoad,
     deleteContactedLoad,
-    updateContactedLoadClick
+    updateContactedLoadClick, updateLoadCovered
 } from '../../features/loads/contactedLoadsSlice';
 import { FiSearch, FiRefreshCw, FiPlus, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import Header from '../HomePage/Header';
 import { Formik, Form, Field } from 'formik';
 import DoNotCallList from './doNotCallList.jsx';
-import { addDoNotCall } from '../../features/loads/doNotCallListSlice';
+import {addDoNotCall, fetchDoNotCallList} from "../../features/loads/doNotCallListSlice.js";
+import {updateLoad} from "../../features/loads/loadSlice.js";
 
 export default function ContactedLoadsTable() {
     const dispatch = useDispatch();
-    const { list: loads = [], loading, error } = useSelector(
-        (state) => state.contactedLoads || {}
-    );
+    const { list: loads = [], loading, error } = useSelector((state) => state.contactedLoads || {});
 
     const [searchQuery, setSearchQuery] = useState('');
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -32,20 +31,17 @@ export default function ContactedLoadsTable() {
         };
         load();
     }, [dispatch]);
+    useEffect(() => {
+        dispatch(fetchContactedLoads());
+        dispatch(fetchDoNotCallList()); // 👈 fetch from backend
+    }, [dispatch]);
 
     const filtered = loads.filter((load) =>
         [
-            'from_location',
-            'to_location',
-            'company',
-            'broker',
-            'contact_method',
-            'notes',
-            'worked_with_us_before',
+            'from_location', 'to_location', 'company', 'broker',
+            'contact_method', 'notes', 'worked_with_us_before',
         ].some((key) =>
-            String(load[key] || '')
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase())
+            String(load[key] || '').toLowerCase().includes(searchQuery.toLowerCase())
         )
     );
 
@@ -64,10 +60,15 @@ export default function ContactedLoadsTable() {
             }
 
             if (payload.worked_with_us_before === 'no') {
-                dispatch(addDoNotCall({ company: payload.company }));
+                dispatch(addDoNotCall({
+                    company_name: payload.company,
+                    broker_name: payload.broker || 'N/A',
+                    added_from: 'auto'
+                }));
             }
 
             await dispatch(fetchContactedLoads());
+            await dispatch(fetchDoNotCallList());
             setIsFormOpen(false);
             setEditingLoad(null);
         } catch (err) {
@@ -123,6 +124,7 @@ export default function ContactedLoadsTable() {
                         >
                             <FiPlus size={18} /> Add Contacted Load
                         </button>
+
                     </div>
                 </div>
 
@@ -137,6 +139,7 @@ export default function ContactedLoadsTable() {
                                 contact_method: editingLoad?.contact_method || 'call',
                                 notes: editingLoad?.notes || '',
                                 company: editingLoad?.company || 'N/A',
+                                broker: editingLoad?.broker || 'N/A',
                                 reference_id: editingLoad?.reference_id || '',
                                 worked_with_us_before: editingLoad?.worked_with_us_before || 'no',
                             }}
@@ -147,6 +150,7 @@ export default function ContactedLoadsTable() {
                                 <Field name="from_location" placeholder="Origin" className="border px-3 py-2 rounded" />
                                 <Field name="to_location" placeholder="Destination" className="border px-3 py-2 rounded" />
                                 <Field name="company" placeholder="Company" className="border px-3 py-2 rounded" />
+                                <Field name="broker" placeholder="Broker" className="border px-3 py-2 rounded" />
                                 <Field name="weight" placeholder="Weight (lbs)" className="border px-3 py-2 rounded" />
                                 <Field name="rate" placeholder="Rate ($)" className="border px-3 py-2 rounded" />
                                 <Field name="reference_id" placeholder="Reference ID" className="border px-3 py-2 rounded" />
@@ -158,23 +162,15 @@ export default function ContactedLoadsTable() {
                                     <option value="yes">Yes</option>
                                     <option value="no">No</option>
                                 </Field>
-                                <Field
-                                    name="notes"
-                                    placeholder="Notes"
-                                    className="border px-3 py-2 rounded col-span-2 md:col-span-3"
-                                />
+                                <Field name="notes" placeholder="Notes" className="border px-3 py-2 rounded col-span-2 md:col-span-3" />
                                 <div className="flex gap-3 col-span-2 md:col-span-3">
                                     <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
                                         {editingLoad ? 'Update' : 'Save'}
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setIsFormOpen(false);
-                                            setEditingLoad(null);
-                                        }}
-                                        className="bg-gray-300 px-4 py-2 rounded"
-                                    >
+                                    <button type="button" onClick={() => {
+                                        setIsFormOpen(false);
+                                        setEditingLoad(null);
+                                    }} className="bg-gray-300 px-4 py-2 rounded">
                                         Cancel
                                     </button>
                                 </div>
@@ -187,7 +183,6 @@ export default function ContactedLoadsTable() {
                     <DoNotCallList />
                 </div>
 
-                {/* 📊 Contact Method Totals */}
                 <div className="px-6 pt-2 pb-4 text-sm text-gray-700 flex gap-6">
                     <span>📦 Total Contacted: <strong>{loads.length}</strong></span>
                     <span>📞 Calls: <strong>{totalCalls}</strong></span>
@@ -223,19 +218,13 @@ export default function ContactedLoadsTable() {
                                 <td className="px-4 py-2">{load.notes}</td>
                                 <td className="px-4 py-2">{load.worked_with_us_before === 'yes' ? 'Yes' : 'No'}</td>
                                 <td className="px-4 py-2 flex gap-2 flex-wrap">
-                                    <button
-                                        onClick={() => {
-                                            setEditingLoad(load);
-                                            setIsFormOpen(true);
-                                        }}
-                                        className="text-blue-600 hover:underline flex items-center gap-1"
-                                    >
+                                    <button onClick={() => {
+                                        setEditingLoad(load);
+                                        setIsFormOpen(true);
+                                    }} className="text-blue-600 hover:underline flex items-center gap-1">
                                         <FiEdit2 /> Edit
                                     </button>
-                                    <button
-                                        onClick={() => dispatch(deleteContactedLoad(load.id))}
-                                        className="text-red-600 hover:underline flex items-center gap-1"
-                                    >
+                                    <button onClick={() => dispatch(deleteContactedLoad(load.id))} className="text-red-600 hover:underline flex items-center gap-1">
                                         <FiTrash2 /> Delete
                                     </button>
                                     <button
@@ -244,6 +233,13 @@ export default function ContactedLoadsTable() {
                                         className="bg-red-500 text-white px-2 py-1 rounded"
                                     >
                                         DC ({load.didnt_connect_count || 0})
+                                    </button>
+                                    <button
+                                        onClick={() => dispatch(updateLoadCovered({ id: load.id, covered: true }))}
+                                        onDoubleClick={() => dispatch(updateLoadCovered({ id: load.id, covered: false }))}
+                                        className={`px-2 py-1 rounded text-white ${load.covered ? 'bg-green-600' : 'bg-red-500'}`}
+                                    >
+                                        {load.covered ? 'Uncover' : 'Cover'}
                                     </button>
                                 </td>
                             </tr>

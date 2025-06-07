@@ -55,6 +55,10 @@ export const updateContactedLoadClick = createAsyncThunk(
         return response.data;
     }
 );
+export const updateLoadCovered = createAsyncThunk('loads/updateCovered', async ({ id, covered }) => {
+    const res = await axios.put(`/api/loads/${id}/covered`, { covered });
+    return res.data;
+});
 
 const contactedLoadsSlice = createSlice({
     name: 'contactedLoads',
@@ -98,6 +102,10 @@ const contactedLoadsSlice = createSlice({
             // 🗑 Delete Contacted Load
             .addCase(deleteContactedLoad.fulfilled, (state, action) => {
                 state.list = state.list.filter(load => load.id !== action.payload);
+            })
+            .addCase(updateLoadCovered.fulfilled, (state, action) => {
+                const idx = state.list.findIndex(l => l.id === action.payload.id);
+                if (idx !== -1) state.list[idx] = action.payload;
             });
     }
 });

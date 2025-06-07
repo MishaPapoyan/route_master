@@ -4,7 +4,7 @@ import { updateDriverClick, updateDriver, fetchDrivers, deleteDriver } from "../
 import { motion } from "framer-motion";
 import { FiEdit2, FiTrash2, FiCheck, FiX, FiPhone, FiPhoneOff } from "react-icons/fi";
 
-export default function DriverRow({ driver, onDelete, onEdit, setSortConfig }) {
+export default function DriverRow({ driver, onDelete, onEdit, onCellClick }) {
     const [covered, setIsCovered] = useState(driver.covered || false);
     const [localCallCount, setLocalCallCount] = useState(driver.call_count || 0);
     const [localDidntConnectCount, setLocalDidntConnectCount] = useState(driver.didnt_connect_count || 0);
@@ -84,26 +84,32 @@ export default function DriverRow({ driver, onDelete, onEdit, setSortConfig }) {
             onMouseLeave={() => setIsHovered(false)}
         >
             <td
-                className={`px-4 py-3 font-medium transition-colors duration-200 ${
-                    covered ? 'text-red-900 line-through bg-red-500' : 'text-gray-800'
-                }`}
+                onClick={() => onCellClick('name', driver.name)}
+                className="px-4 py-3 font-medium text-gray-800 cursor-pointer hover:text-blue-600"
             >
                 {driver.name}
             </td>
 
-            <td className="px-4 py-3">
-                <a href={`tel:${driver.phone_number}`} className="text-blue-600 hover:underline">
-                    {driver.phone_number}
-                </a>
+            <td
+                onClick={() => onCellClick('phone_number', driver.phone_number)}
+                className="px-4 py-3 cursor-pointer text-blue-600 hover:underline"
+            >
+                {driver.phone_number}
             </td>
 
-            <td className="px-4 py-3">
+            <td
+                onClick={() => driver.current_location && onCellClick('current_location', driver.current_location)}
+                className="px-4 py-3 cursor-pointer"
+            >
                 <span className="inline-block px-2 py-1 rounded-full text-blue-800 text-xs">
                     {driver.current_location || '-'}
                 </span>
             </td>
 
-            <td className="px-4 py-3">
+            <td
+                onClick={() => driver.next_location && onCellClick('next_location', driver.next_location)}
+                className="px-4 py-3 cursor-pointer"
+            >
                 <span className="inline-block px-2 py-1 rounded-full bg-purple-100 text-purple-800 text-xs">
                     {driver.next_location || '-'}
                 </span>
@@ -113,7 +119,7 @@ export default function DriverRow({ driver, onDelete, onEdit, setSortConfig }) {
                 <motion.div
                     whileTap={{ scale: 0.95 }}
                     onClick={handleCallClick}
-                    className={`cursor-pointer inline-flex items-center justify-center w-8 h-8 rounded-full ${localCallCount > 0 ? 'bg-green-100 text-green-800' : 'text-gray-500'}`}
+                    className={`cursor-pointer inline-flex items-center justify-center w-8 h-8 rounded-full ${localCallCount > 0 ? 'bg-green-100 text-green-600' : 'text-gray-500'}`}
                 >
                     <FiPhone size={14} />
                     {localCallCount > 0 && (
@@ -122,7 +128,10 @@ export default function DriverRow({ driver, onDelete, onEdit, setSortConfig }) {
                 </motion.div>
             </td>
 
-            <td className="px-4 py-3 font-mono text-sm text-gray-600">
+            <td
+                onClick={() => driver.rigz_id && onCellClick('rigz_id', driver.rigz_id)}
+                className="px-4 py-3 font-mono text-sm text-gray-600 cursor-pointer"
+            >
                 {driver.rigz_id || '-'}
             </td>
 
@@ -144,25 +153,32 @@ export default function DriverRow({ driver, onDelete, onEdit, setSortConfig }) {
 
             <td className="px-4 py-3 max-w-xs truncate">
                 {(driver.preferred_routes || []).map((route, i) => (
-                    <span key={i} className="inline-block mr-1 mb-1 px-2 py-0.5 text-gray-700 rounded-md text-xs">
+                    <span
+                        key={i}
+                        onClick={() => onCellClick('main_route', route)}
+                        className="inline-block mr-1 mb-1 px-2 py-0.5 text-gray-700 rounded-md text-xs cursor-pointer hover:bg-gray-200"
+                    >
                         {route}
                     </span>
                 ))}
             </td>
 
-            <td className="px-4 py-3">
-                <span className="text-xs uppercase tracking-wider text-gray-500">
-                    {driver.nationality || '-'}
-                </span>
+            <td
+                onClick={() => driver.nationality && onCellClick('nationality', driver.nationality)}
+                className="px-4 py-3 text-xs uppercase tracking-wider text-gray-500 cursor-pointer"
+            >
+                {driver.nationality || '-'}
             </td>
 
-            <td className="px-4 py-3 text-xs text-gray-500">{date}</td>
+            <td
+                onClick={() => onCellClick('createdAt', date)}
+                className="px-4 py-3 text-xs text-gray-500 cursor-pointer hover:text-blue-600 transition-colors"
+            >
+                {date}
+            </td>
 
             <td
-                onClick={() => setSortConfig(prev => ({
-                    key: 'createdAt',
-                    direction: prev.key === 'createdAt' && prev.direction === 'asc' ? 'desc' : 'asc'
-                }))}
+                onClick={() => onCellClick('createdAt', time)}
                 className="px-4 py-3 text-xs text-gray-500 cursor-pointer hover:text-blue-600 transition-colors"
             >
                 {time}
