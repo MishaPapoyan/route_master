@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import {DataTypes, Sequelize} from 'sequelize';
 
 export default (sequelize) => {
     const Driver = sequelize.define('Driver', {
@@ -14,7 +14,12 @@ export default (sequelize) => {
         phone_number: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true,
+            // unique: true ❌ REMOVE THIS
+        },
+        created_date: {
+            type: DataTypes.DATEONLY,
+            allowNull: true,
+            defaultValue: Sequelize.NOW,
         },
         call_count: {
             type: DataTypes.INTEGER,
@@ -54,7 +59,7 @@ export default (sequelize) => {
         rigz_id: {
             type: DataTypes.STRING,
             allowNull: false,
-            unique: true,
+            // unique: true ❌ REMOVE THIS
         },
         nationality: {
             type: DataTypes.STRING,
@@ -70,6 +75,14 @@ export default (sequelize) => {
         },
         average_rate: {
             type: DataTypes.DECIMAL(10, 2),
+            allowNull: true,
+        },
+        team_or_solo: {
+            type: DataTypes.ENUM('team', 'solo'),
+            allowNull: true,
+        },
+        total_feet: {
+            type: DataTypes.ENUM('53', '26'),
             allowNull: true,
         },
         preferred_routes: {

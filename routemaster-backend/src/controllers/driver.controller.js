@@ -1,10 +1,11 @@
+import { Sequelize } from 'sequelize';
 import db from '../models/index.js';
 const Driver = db.Driver;
 
-// ✅ GET all drivers (no associations, safe fetch)
 export const getAllDrivers = async (req, res) => {
     try {
-        const drivers = await Driver.findAll({ raw: true }); // prevent Sequelize association failures
+        const drivers = await Driver.findAll({ raw: true });
+        console.log("📦 DRIVERS FROM DB:", drivers);  // Add this
         res.status(200).json(drivers);
     } catch (err) {
         console.error('❌ Error fetching Drivers:', err);
@@ -15,58 +16,37 @@ export const getAllDrivers = async (req, res) => {
     }
 };
 
-// ✅ CREATE driver
 export const createDriver = async (req, res) => {
     try {
-        const {
-            name,
-            phone_number,
-            call_count,
-            current_location,
-            next_location,
-            is_from_rigz,
-            nationality,
-            notes,
-            rigz_id,
-            max_weight_capacity,
-            average_rate,
-            preferred_routes,
-            status,
-            connect_count,
-            didnt_connect_count,
-        } = req.body;
+        const today = new Date('2025-06-09T15:05:00+04:00').toISOString().split('T')[0]; // Current date
+        const { phone_number, rigz_id } = req.body;
 
-        const newDriver = await Driver.create({
-            name,
-            phone_number,
-            call_count,
-            current_location,
-            next_location,
-            is_from_rigz,
-            nationality,
-            notes,
-            rigz_id,
-            max_weight_capacity,
-            average_rate,
-            preferred_routes,
-            status,
-            connect_count,
-            didnt_connect_count,
+        const existing = await Driver.findOne({
+            where: {
+                phone_number,
+                created_date: today,
+            },
         });
 
-        console.log('✅ Driver created:', newDriver);
+        if (existing) {
+            return res.status(400).json({ message: 'Driver already added today.' });
+        }
+
+        const newDriver = await Driver.create({
+            ...req.body,
+            created_date: today,
+        });
+
         res.status(201).json(newDriver);
     } catch (err) {
         console.error('❌ Error creating driver:', err);
-        res.status(500).json({ message: 'Server error while creating driver' });
+        res.status(500).json({ message: 'Server error while creating driver', error: err.message });
     }
 };
 
-// ✅ UPDATE driver
 export const updateDriver = async (req, res) => {
     const { id } = req.params;
     let updates = req.body;
-    console.log('Raw updates:', updates);
 
     if (!updates) {
         return res.status(400).json({ message: 'No update data provided' });
@@ -96,7 +76,6 @@ export const updateDriver = async (req, res) => {
     }
 };
 
-// ✅ DELETE driver
 export const deleteDriver = async (req, res) => {
     const driverId = req.params.id;
     try {
@@ -112,7 +91,6 @@ export const deleteDriver = async (req, res) => {
     }
 };
 
-// ✅ CALL STATUS
 export const updateCallStatus = async (req, res) => {
     try {
         const { id } = req.params;
