@@ -1,46 +1,21 @@
-import React, { useEffect } from 'react'
-import { Field, Form, Formik } from 'formik'
-import * as Yup from 'yup'
-import { useDispatch } from 'react-redux'
-import { createDriver, updateDriver } from '../../features/drivers/driverSlice.js'
-import {  AnimatePresence } from 'framer-motion'
-import { motion } from 'framer-motion';
-import { fetchDrivers } from '../../features/drivers/driverSlice.js';
+import React, { useEffect } from 'react';
+import { Field, Form, Formik } from 'formik';
+import * as Yup from 'yup';
+import { useDispatch } from 'react-redux';
+import { createDriver, updateDriver, fetchDrivers } from '../../features/drivers/driverSlice.js';
+import { AnimatePresence, motion } from 'framer-motion';
 
 function DriverForm({ isOpen, setIsOpen, setEditingDriver, editingDriver }) {
-    const dispatch = useDispatch()
+    const dispatch = useDispatch();
 
     useEffect(() => {
-        if (isOpen) {
-            document.body.style.overflow = 'hidden'
-        } else {
-            document.body.style.overflow = 'auto'
-        }
-        return () => {
-            document.body.style.overflow = 'auto'
-        }
-    }, [isOpen])
+        document.body.style.overflow = isOpen ? 'hidden' : 'auto';
+        return () => { document.body.style.overflow = 'auto'; };
+    }, [isOpen]);
 
     const handleClose = () => {
-        setIsOpen(false)
-        setEditingDriver(null)
-    }
-
-    const handleSubmit = async (values) => {
-        try {
-            setIsSubmitting(true);
-            if (editingDriver) {
-                await dispatch(updateDriver({ id: editingDriver.id, ...values }));
-            } else {
-                await dispatch(createDriver(values));
-            }
-            dispatch(fetchDrivers());
-            setIsOpen(false);
-        } catch (err) {
-            console.error("❌ Error submitting driver:", err);
-        } finally {
-            setIsSubmitting(false);
-        }
+        setIsOpen(false);
+        setEditingDriver(null);
     };
 
     return (
@@ -63,10 +38,7 @@ function DriverForm({ isOpen, setIsOpen, setEditingDriver, editingDriver }) {
                             <h2 className="text-2xl font-bold text-gray-800">
                                 {editingDriver ? "Edit Driver" : "Add New Driver"}
                             </h2>
-                            <button
-                                onClick={handleClose}
-                                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
-                            >
+                            <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100">
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
@@ -76,177 +48,101 @@ function DriverForm({ isOpen, setIsOpen, setEditingDriver, editingDriver }) {
                         <Formik
                             enableReinitialize
                             initialValues={{
-                                name: editingDriver?.name || "",
-                                phone_number: editingDriver?.phone_number || "",
-                                rigz_id: editingDriver?.rigz_id || "",
-                                current_location: editingDriver?.current_location || "",
-                                next_location: editingDriver?.next_location || "",
-                                nationality: editingDriver?.nationality || "",
-                                call_count: editingDriver?.call_count || "",
-                                max_weight_capacity: editingDriver?.max_weight_capacity || "",
-                                average_rate: editingDriver?.average_rate || "",
-                                preferred_routes: editingDriver?.preferred_routes?.join(', ') || "",
-                                type: editingDriver?.type || "",
-                                notes: editingDriver?.notes || ""
+                                name: editingDriver?.name || '',
+                                phone_number: editingDriver?.phone_number || '',
+                                rigz_id: editingDriver?.rigz_id || '',
+                                current_location: editingDriver?.current_location || '',
+                                next_location: editingDriver?.next_location || '',
+                                nationality: editingDriver?.nationality || '',
+                                call_count: editingDriver?.call_count || 0,
+                                max_weight_capacity: editingDriver?.max_weight_capacity || '',
+                                average_rate: editingDriver?.average_rate || '',
+                                preferred_routes: Array.isArray(editingDriver?.preferred_routes)
+                                    ? editingDriver.preferred_routes.join(', ')
+                                    : editingDriver?.preferred_routes || '',
+                                type: editingDriver?.type || '',
+                                notes: editingDriver?.notes || '',
+                                team_or_solo: editingDriver?.team_or_solo || 'solo',
+                                total_feet: editingDriver?.total_feet || 53,
+                                is_from_rigz: editingDriver?.is_from_rigz ?? true,
                             }}
                             validationSchema={Yup.object({
                                 name: Yup.string().required("Required"),
                                 phone_number: Yup.string().required("Required"),
-                                rigz_id: Yup.string().required("Required")
+                                rigz_id: Yup.string().required("Required"),
+                                max_weight_capacity: Yup.number().required("Required"),
+                                team_or_solo: Yup.string().oneOf(['solo', 'team']).required('Required'),
+                                total_feet: Yup.string().oneOf(['26', '53']).required('Required'),
                             })}
                             onSubmit={async (values, { setSubmitting }) => {
-                                console.log(values);
                                 try {
+                                    values.preferred_routes = Array.isArray(values.preferred_routes)
+                                        ? values.preferred_routes
+                                        : values.preferred_routes.split(',').map(r => r.trim()).filter(Boolean);
+
                                     if (editingDriver) {
-                                        console.log(editingDriver.id);
-                                        const res = await dispatch(updateDriver({ id: editingDriver.id, ...values }));
-                                        console.log(res)
+                                        await dispatch(updateDriver({ id: editingDriver.id, ...values })).unwrap();
                                     } else {
-                                        await dispatch(createDriver(values));
+                                        await dispatch(createDriver(values)).unwrap();
                                     }
-                                    dispatch(fetchDrivers());
+
+                                    await dispatch(fetchDrivers()).unwrap();
                                     setIsOpen(false);
                                 } catch (err) {
                                     console.error("❌ Error:", err);
+                                    alert(err?.message || "Error saving driver");
                                 } finally {
                                     setSubmitting(false);
                                 }
-                            }}                        >
-                            {({ isSubmitting, errors, touched }) => (
+                            }}
+                        >
+                            {({ isSubmitting }) => (
                                 <Form className="p-6 space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        <div>
-                                            <Field
-                                                name="name"
-                                                placeholder="Driver Name *"
-                                                className={`w-full border ${errors.name && touched.name ? 'border-red-300' : 'border-gray-200'} rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                            />
-                                            {errors.name && touched.name && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: -5 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="text-red-500 text-xs mt-1"
-                                                >
-                                                    {errors.name}
-                                                </motion.div>
-                                            )}
-                                        </div>
+                                        <Field name="name" placeholder="Driver Name *" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="phone_number" placeholder="Phone Number *" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="rigz_id" placeholder="Rigz ID *" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="current_location" placeholder="Current Location" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="next_location" placeholder="Next Location" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="nationality" placeholder="Nationality" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="call_count" type="number" placeholder="Call Count" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="max_weight_capacity" type="number" placeholder="Max Weight (lbs)" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="average_rate" type="number" placeholder="Avg Rate ($)" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="type" placeholder="Truck Type" className="w-full border rounded-lg px-4 py-3" />
+                                        <Field name="preferred_routes" placeholder="Preferred Routes (comma separated)" className="w-full border rounded-lg px-4 py-3" />
 
                                         <div>
-                                            <Field
-                                                name="phone_number"
-                                                placeholder="Phone Number *"
-                                                className={`w-full border ${errors.phone_number && touched.phone_number ? 'border-red-300' : 'border-gray-200'} rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                            />
-                                            {errors.phone_number && touched.phone_number && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: -5 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="text-red-500 text-xs mt-1"
-                                                >
-                                                    {errors.phone_number}
-                                                </motion.div>
-                                            )}
+                                            <label className="text-sm font-medium text-gray-700">Team</label>
+                                            <Field as="select" name="team_or_solo" className="mt-1 w-full rounded border p-2">
+                                                <option value="solo">Solo</option>
+                                                <option value="team">Team</option>
+                                            </Field>
                                         </div>
-
                                         <div>
-                                            <Field
-                                                name="rigz_id"
-                                                placeholder="Rigz ID *"
-                                                className={`w-full border ${errors.rigz_id && touched.rigz_id ? 'border-red-300' : 'border-gray-200'} rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all`}
-                                            />
-                                            {errors.rigz_id && touched.rigz_id && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: -5 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className="text-red-500 text-xs mt-1"
-                                                >
-                                                    {errors.rigz_id}
-                                                </motion.div>
-                                            )}
+                                            <label className="text-sm font-medium text-gray-700">Total Feet</label>
+                                            <Field as="select" name="total_feet" className="mt-1 w-full rounded border p-2">
+                                                <option value="53">53</option>
+                                                <option value="26">26</option>
+                                            </Field>
                                         </div>
-
-                                        <Field
-                                            name="current_location"
-                                            placeholder="Current Location"
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
-                                        <Field
-                                            name="next_location"
-                                            placeholder="Next Location"
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
-                                        <Field
-                                            name="nationality"
-                                            placeholder="Nationality"
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
-                                        <Field
-                                            name="call_count"
-                                            placeholder="Call Count"
-                                            type="number"
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
-                                        <Field
-                                            name="max_weight_capacity"
-                                            placeholder="Max Weight (lbs)"
-                                            type="number"
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
-                                        <Field
-                                            name="average_rate"
-                                            placeholder="Avg Rate ($)"
-                                            type="number"
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
-                                        <Field
-                                            name="type"
-                                            placeholder="Truck Type (van, dry, VR)"
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
-                                        <div className="md:col-span-2">
-                                            <Field
-                                                name="preferred_routes"
-                                                placeholder="Preferred Routes (comma separated)"
-                                                className="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                            />
+                                        <div className="mt-3">
+                                            <label className="inline-flex items-center">
+                                                <Field type="checkbox" name="is_from_rigz" className="mr-2" />
+                                                <span className="text-sm text-gray-700">Driver is from Rigz</span>
+                                            </label>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <Field
-                                            as="textarea"
-                                            name="notes"
-                                            placeholder="Additional notes about the driver..."
-                                            rows="3"
-                                            className="w-full border border-gray-200 rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                        />
+                                        <Field as="textarea" name="notes" placeholder="Additional notes..." rows="3" className="w-full border rounded-lg px-4 py-3 resize-none" />
                                     </div>
 
                                     <div className="flex justify-end space-x-3 pt-4">
-                                        <button
-                                            type="button"
-                                            onClick={handleClose}
-                                            className="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-                                        >
+                                        <button type="button" onClick={handleClose} className="px-6 py-2.5 border rounded-lg text-gray-700 hover:bg-gray-50">
                                             Cancel
                                         </button>
-                                        <button
-                                            type="submit"
-                                            disabled={isSubmitting}
-                                            className={`px-6 py-2.5 rounded-lg text-white font-medium transition-all ${isSubmitting ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'} shadow-md hover:shadow-lg`}
-                                        >
-                                            {isSubmitting ? (
-                                                <span className="flex items-center justify-center">
-                                                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
-                                                    Processing...
-                                                </span>
-                                            ) : (
-                                                <span>Save Driver</span>
-                                            )}
+                                        <button type="submit" disabled={isSubmitting} className="px-6 py-2.5 rounded-lg text-white font-medium shadow-md bg-blue-600 hover:bg-blue-700">
+                                            {isSubmitting ? 'Processing...' : 'Save Driver'}
                                         </button>
                                     </div>
                                 </Form>
@@ -256,7 +152,7 @@ function DriverForm({ isOpen, setIsOpen, setEditingDriver, editingDriver }) {
                 </motion.div>
             )}
         </AnimatePresence>
-    )
+    );
 }
 
-export default DriverForm
+export default DriverForm;

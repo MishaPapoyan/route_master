@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import Header from "../HomePage/Header.jsx";
 
-// Reusable card component
+// Reusable card
 function StatCard({ label, value, color = 'gray' }) {
     return (
         <div className={`bg-white shadow rounded-lg p-4 border-t-4 border-${color}-500`}>
@@ -12,15 +12,71 @@ function StatCard({ label, value, color = 'gray' }) {
     );
 }
 
+// Driver Stats Table
+function DriverStatsTable({ drivers }) {
+    if (!drivers.length) return null;
+
+    const getMostActiveDay = (createdDates) => {
+        const counts = {};
+        createdDates.forEach(date => {
+            const day = new Date(date).toLocaleDateString('en-US', { weekday: 'long' });
+            counts[day] = (counts[day] || 0) + 1;
+        });
+        return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+    };
+
+    return (
+        <div className="overflow-x-auto mt-10">
+            <h2 className="text-xl font-semibold mb-2 text-gray-800">📋 Driver Stats (Top 15)</h2>
+            <table className="min-w-full bg-white border border-gray-200 text-sm">
+                <thead className="bg-gray-50 text-gray-700">
+                <tr>
+                    <th className="px-4 py-2 text-left">Name</th>
+                    <th className="px-4 py-2">Phone</th>
+                    <th className="px-4 py-2">Route</th>
+                    <th className="px-4 py-2">Calls</th>
+                    <th className="px-4 py-2">Avg Rate</th>
+                    <th className="px-4 py-2">Weight</th>
+                    <th className="px-4 py-2">Team</th>
+                    <th className="px-4 py-2">Feet</th>
+                    <th className="px-4 py-2">Nationality</th>
+                    <th className="px-4 py-2">Most Active Day</th>
+                </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                {drivers.slice(0, 15).map(driver => (
+                    <tr key={driver.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-2">{driver.name}</td>
+                        <td className="px-4 py-2">{driver.phone_number}</td>
+                        <td className="px-4 py-2">{driver.main_route || '—'}</td>
+                        <td className="px-4 py-2 text-center">{driver.call_count || 0}</td>
+                        <td className="px-4 py-2 text-center">${driver.average_rate || 0}</td>
+                        <td className="px-4 py-2 text-center">{driver.max_weight_capacity || '—'}</td>
+                        <td className="px-4 py-2 text-center">{driver.team_or_solo || '—'}</td>
+                        <td className="px-4 py-2 text-center">{driver.total_feet || '—'}</td>
+                        <td className="px-4 py-2 text-center">{driver.nationality || '—'}</td>
+                        <td className="px-4 py-2 text-center">
+                            {getMostActiveDay([driver.createdAt])}
+                        </td>
+                    </tr>
+                ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 export default function Dashboard() {
     const { list: loads = [] } = useSelector(state => state.loads || {});
+    const { list: drivers = [] } = useSelector(state => state.drivers || {});
     const [timeframe, setTimeframe] = useState('daily');
+
     const now = new Date();
 
     const filteredLoads = useMemo(() => {
         return loads.filter(load => {
             const createdAt = new Date(load.createdAt);
-            if (timeframe === 'daily') return createdAt.toDateString() === new Date().toDateString();
+            if (timeframe === 'daily') return createdAt.toDateString() === now.toDateString();
             if (timeframe === 'weekly') {
                 const sevenDaysAgo = new Date();
                 sevenDaysAgo.setDate(now.getDate() - 7);
@@ -54,6 +110,9 @@ export default function Dashboard() {
     }, {});
     const mostFrequentBroker = Object.entries(brokerCount)
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+    // Drivers sorted by call_count
+    const topDrivers = [...drivers].sort((a, b) => (b.call_count || 0) - (a.call_count || 0));
 
     return (
         <div className="p-6 space-y-6">
@@ -90,6 +149,8 @@ export default function Dashboard() {
                 <StatCard label="Unique Companies" value={companies.size} color="fuchsia" />
                 <StatCard label="Top Broker" value={mostFrequentBroker} color="teal" />
             </div>
+
+            <DriverStatsTable drivers={topDrivers} />
         </div>
     );
 }

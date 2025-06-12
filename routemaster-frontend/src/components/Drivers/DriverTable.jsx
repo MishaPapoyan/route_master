@@ -9,6 +9,9 @@ import { FiPlus, FiSearch, FiRefreshCw, FiFilter } from 'react-icons/fi';
 import Header from "../HomePage/Header.jsx";
 
 export default function DriverTable() {
+    const [sortKey, setSortKey] = useState(null);
+    const [sortDirection, setSortDirection] = useState('asc');
+
     const dispatch = useDispatch();
     const { loading, error, list } = useSelector((state) => state.drivers);
     const [isOpen, setIsOpen] = useState(false);
@@ -23,7 +26,41 @@ export default function DriverTable() {
         notRigz: false,
     });
     const [filters, setFilters] = useState({}); // Store column filters
+    const sortedDrivers = [...list]
+        .sort((a, b) => {
+            // Always put covered drivers at the bottom
+            if (a.covered && !b.covered) return 1;
+            if (!a.covered && b.covered) return -1;
 
+            // Dynamic column sort
+            if (sortKey) {
+                const valA = a[sortKey] || '';
+                const valB = b[sortKey] || '';
+
+                if (typeof valA === 'string') {
+                    return sortDirection === 'asc'
+                        ? valA.localeCompare(valB)
+                        : valB.localeCompare(valA);
+                } else {
+                    return sortDirection === 'asc'
+                        ? valA - valB
+                        : valB - valA;
+                }
+            }
+
+            // Default fallback: sort by name
+            return a.name.localeCompare(b.name);
+        });
+
+
+    const handleSort = (key) => {
+        if (sortKey === key) {
+            setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+        } else {
+            setSortKey(key);
+            setSortDirection('asc');
+        }
+    };
     useEffect(() => {
         const loadData = async () => {
             setIsRefreshing(true);
@@ -36,14 +73,21 @@ export default function DriverTable() {
     const filteredByDate = list.filter(driver => {
         if (daysAgo === 5) return true;
 
+        if (daysAgo === 100) {
+            return driver.current_location?.toLowerCase().includes('los');
+        }
+
+        if (daysAgo === 200) {
+            return driver.next_location?.toLowerCase().includes('los');
+        }
+
         const created = new Date(driver.createdAt);
-        const createdDay = new Date(created.getFullYear(), created.getMonth(), created.getDate());
-
-        const now = new Date();
-        const compareDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        compareDay.setDate(compareDay.getDate() - daysAgo);
-
-        return createdDay.getTime() === compareDay.getTime();
+        const today = new Date();
+        return (
+            created.getFullYear() === today.getFullYear() &&
+            created.getMonth() === today.getMonth() &&
+            created.getDate() === today.getDate() - daysAgo
+        );
     });
 
     const filteredList = filteredByDate
@@ -154,6 +198,25 @@ export default function DriverTable() {
                             <span className="bg-blue-100 text-blue-600 p-2 rounded-lg">🚚</span>
                             Driver Management
                         </h2>
+                        <div className="flex gap-4 px-4 py-2">
+                            <button
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                                    daysAgo === 100 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                                onClick={() => setDaysAgo(100)} // 100 means "Los Out"
+                            >
+                                🚛 Los Out
+                            </button>
+
+                            <button
+                                className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                                    daysAgo === 200 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                                onClick={() => setDaysAgo(200)} // 200 means "Back to Los"
+                            >
+                                🏁 Back to Los
+                            </button>
+                        </div>
                         <button
                             onClick={handleRefresh}
                             disabled={isRefreshing}
@@ -275,6 +338,8 @@ export default function DriverTable() {
 
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
+
+
                         <DriverTableHeader />
                         <tbody className="divide-y divide-gray-100">
                         <AnimatePresence>
@@ -289,18 +354,22 @@ export default function DriverTable() {
                                             {route}
                                         </td>
                                     </tr>
-                                    {drivers.map((driver) => (
-                                        <DriverRow
-                                            key={driver.id}
-                                            driver={driver}
-                                            onDelete={(id) => dispatch(deleteDriver(id))}
-                                            onEdit={(driver) => {
-                                                setEditingDriver(driver);
-                                                setIsOpen(true);
-                                            }}
-                                            onCellClick={handleFilterChange}
-                                        />
-                                    ))}
+                                    {drivers
+                                        .sort((a, b) => {
+                                            // sort logic here...
+                                        })
+                                        .map(driver => (
+                                            <DriverRow
+                                                key={driver.id}
+                                                driver={driver}
+                                                onDelete={(id) => dispatch(deleteDriver(id))}
+                                                onEdit={(driver) => {
+                                                    setEditingDriver(driver);
+                                                    setIsOpen(true);
+                                                }}
+                                                onCellClick={handleFilterChange}
+                                            />
+                                        ))}
                                 </React.Fragment>
                             ))}
                         </AnimatePresence>

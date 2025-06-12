@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DriverTableHeader = () => {
+export default function DriverTableHeader({ sortKey, sortDirection, onSort }) {
     const headers = [
         'name',
         'phone_number',
@@ -11,16 +11,20 @@ const DriverTableHeader = () => {
         'max_weight_capacity',
         'average_rate',
         'preferred_routes',
+        'type', // ✅ ADD THIS
+        'total_feet',
         'nationality',
-        'createdAt',
         'createdAt',
         'notes',
         'status',
     ];
 
+
     const getDisplayName = (key) => {
         const map = {
             name: 'Name',
+            type: 'type',
+            total_feet: 'total_feet',
             phone_number: 'Phone',
             current_location: 'Current Location',
             next_location: 'Next Location',
@@ -30,27 +34,34 @@ const DriverTableHeader = () => {
             average_rate: 'Avg Rate',
             preferred_routes: 'Preferred Routes',
             nationality: 'Nationality',
-            createdAt: 'Date', // Used for both Date and Time
+            createdAt: 'Date',
             notes: 'Notes',
             status: 'Status',
         };
         return map[key] || key;
     };
 
+    const getArrow = (key) => {
+        if (sortKey !== key) return '';
+        return sortDirection === 'asc' ? '⬆️' : '⬇️';
+    };
+
     return (
         <thead>
         <tr>
-            {headers.map((header, index) => (
+            {headers.map((header) => (
                 <th
-                    key={index}
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    key={header}
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-blue-700"
+                    onClick={() => onSort(header)}
                 >
-                    {getDisplayName(header)}
+                    {getDisplayName(header)} {getArrow(header)}
                 </th>
             ))}
+            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+            </th>
         </tr>
         </thead>
     );
-};
-
-export default DriverTableHeader;
+}
